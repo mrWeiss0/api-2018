@@ -5,18 +5,21 @@
  *
  * The program takes input file from stdin,
  * parses it and prints it back to stdout.
+ * Rules are stored in a dictionary that maps current state
+ * and read symbol to a list of destinations to follow.
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "types.h"
+#include "rules.h"
 
 #define BUFSZ 512
 
 /* Machine settings */
 struct tm{
+    rule_dict* rules;
 };
 
 void tm_init   (struct tm*);
@@ -83,22 +86,31 @@ int main(){
 /******************** TM init and delete ********************/
 
 void tm_init(struct tm *tm){
-    (void)tm;
+    tm->rules = new_rule_dict();
+    assert(tm->rules);
 }
 
 void tm_destroy(struct tm *tm){
-    (void)tm;
+    delete_rule_dict(tm->rules);
 }
 
 /******************** Parser functions ********************/
 
 void f_tr(char *s, struct tm *tm){
-    state in_st, out_st;
-    symbol in_ch, out_ch;
-    char mv;
-    (void)tm;
-    sscanf(s, "%u %c %c %c %u",  &in_st, &in_ch, &out_ch, &mv, &out_st);
-    printf(   "%u %c %c %c %u\n", in_st,  in_ch,  out_ch,  mv,  out_st);
+    struct rule rule;
+    sscanf(s, "%u %c %c %c %u", &rule.st_from, &rule.ch_from,
+                                &rule.ch_dest, &rule.mv_dest, &rule.st_dest);
+    int t = rule_dict_insert(tm->rules, &rule);
+    assert(!t);
+    rule_dest* w = rule_dict_find(tm->rules, rule.st_from, rule.ch_from);
+    for(; w; w = w->next)
+        if(w->ch == rule.ch_dest &&
+           w->mv == rule.mv_dest &&
+           w->st == rule.st_dest){
+            printf("%u %c %c %c %u\n", rule.st_from, rule.ch_from,
+                                       w->ch, w->mv, w->st);
+            break;
+        }
 }
 
 void f_acc(char *s, struct tm *tm){
