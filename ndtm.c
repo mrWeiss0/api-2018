@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include "types.h"
 
 #define BUFSZ 512
 
@@ -92,8 +93,8 @@ void tm_destroy(struct tm *tm){
 /******************** Parser functions ********************/
 
 void f_tr(char *s, struct tm *tm){
-    unsigned int in_st, out_st;
-    char in_ch, out_ch;
+    state in_st, out_st;
+    symbol in_ch, out_ch;
     char mv;
     (void)tm;
     sscanf(s, "%u %c %c %c %u",  &in_st, &in_ch, &out_ch, &mv, &out_st);
@@ -101,7 +102,7 @@ void f_tr(char *s, struct tm *tm){
 }
 
 void f_acc(char *s, struct tm *tm){
-    unsigned int st = atoi(s);
+    state st = atoi(s);
     (void)tm;
     printf("%u\n", st);
 }
