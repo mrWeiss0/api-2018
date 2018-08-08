@@ -5,6 +5,7 @@
  *
  * The program takes input file from stdin,
  * parses it and prints it back to stdout.
+ * When a branch goes over max moves, it's considered not to terminate.
  */
 
 #include <stdlib.h>
@@ -16,6 +17,7 @@
 
 /* Machine settings */
 struct tm{
+    unsigned int max;
 };
 
 void tm_init   (struct tm*);
@@ -108,8 +110,8 @@ void f_acc(char *s, struct tm *tm){
 
 void f_max(char *s, struct tm *tm){
     unsigned int max = atoi(s);
-    (void)tm;
-    printf("%u\n", max);
+    tm->max = max;
+    printf("%u\n", tm->max);
 }
 
 void f_run(char *s, struct tm *tm){
