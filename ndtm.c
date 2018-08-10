@@ -5,18 +5,20 @@
  *
  * The program takes input file from stdin,
  * parses it and prints it back to stdout.
+ * Accepting states are stored in a set.
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "types.h"
+#include "accept.h"
 
 #define BUFSZ 512
 
 /* Machine settings */
 struct tm{
+    set *accept;
 };
 
 void tm_init   (struct tm*);
@@ -83,11 +85,12 @@ int main(){
 /******************** TM init and delete ********************/
 
 void tm_init(struct tm *tm){
-    (void)tm;
+    tm->accept = new_set();
+    assert(tm->accept);
 }
 
 void tm_destroy(struct tm *tm){
-    (void)tm;
+    delete_set(tm->accept);
 }
 
 /******************** Parser functions ********************/
@@ -96,15 +99,18 @@ void f_tr(char *s, struct tm *tm){
     state in_st, out_st;
     symbol in_ch, out_ch;
     char mv;
-    (void)tm;
     sscanf(s, "%u %c %c %c %u",  &in_st, &in_ch, &out_ch, &mv, &out_st);
+    set_max(tm->accept, in_st);
+    set_max(tm->accept, out_st);
     printf(   "%u %c %c %c %u\n", in_st,  in_ch,  out_ch,  mv,  out_st);
 }
 
 void f_acc(char *s, struct tm *tm){
     state st = atoi(s);
-    (void)tm;
-    printf("%u\n", st);
+    int t = set_put(tm->accept, st);
+    assert(t);
+    if(set_get(tm->accept, st))
+        printf("%u\n", st);
 }
 
 void f_max(char *s, struct tm *tm){
