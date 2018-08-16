@@ -28,13 +28,17 @@ typedef struct state_list{
     struct state_list *next;
 } state_list;
 
+/* Format dependent functions */
 typedef void* put_funct(void*, state);
 typedef int   get_funct(void*, state);
-
+typedef void  del_funct(void*);
 put_funct bits_put, list_put, * const f_put[] = {list_put, bits_put};
 get_funct bits_get, list_get, * const f_get[] = {list_get, bits_get};
+del_funct delete_list,        * const f_del[] = {delete_list, free};
 
-void delete_list(state_list*);
+char *list_to_bits(void**, size_t);
+
+/******************** Set ********************/
 
 set* new_set(){
     set* s    = malloc(sizeof(*s));
@@ -46,6 +50,13 @@ set* new_set(){
 }
 
 int set_put(set* s, state st){
+    /* ceil(max + 1 [bits] / 8) [Bytes] */
+    size_t bits_sz = (s->max >> 3) + 1;
+    /* if list is larger than bits convert to bitfield */
+    if(s->format == list && sizeof(state_list) * (s->count + 1) >= bits_sz){
+        if(list_to_bits(&s->data, bits_sz))
+            s->format = bits;
+    }
     void *t = f_put[s->format](s->data, st);
     if(t){
         s->count++;
@@ -64,12 +75,11 @@ void set_max(set *s, size_t max){
 }
 
 void delete_set(set* s){
-    if(s->format == list)
-        delete_list(s->data);
-    else
-        free(s->data);
+    f_del[s->format](s->data);
     free(s);
 }
+
+/******************** Bitfield ********************/
 
 void *bits_put(void *bits, state st){
     ((char*) bits)[st >> 3] |= 1 << (st & 7);
@@ -79,6 +89,8 @@ void *bits_put(void *bits, state st){
 int bits_get(void *bits, state st){
     return !!(((char*) bits)[st >> 3] & 1 << (st & 7));
 }
+
+/******************** List ********************/
 
 void *list_put(void *list, state st){
     state_list* t = malloc(sizeof(*t));
@@ -94,10 +106,21 @@ int list_get(void *list, state st){
     return 0;
 }
 
-void delete_list(state_list* list){
+char *list_to_bits(void **list, size_t size){
+    char *bits = calloc(size, sizeof(*bits));
+    if(!bits)
+        return NULL;
+    state_list* l;
+    for(l = *(state_list**)list; l; l = l->next)
+        bits_put(bits, l->st);
+    delete_list(*list);
+    return *list = bits;
+}
+
+void delete_list(void *list){
     state_list *t;
     while(list){
-        t = list->next;
+        t = ((state_list*)list)->next;
         free(list);
         list = t;
     }
