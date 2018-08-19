@@ -10,6 +10,7 @@
  * already exists, the new non deterministic destination is pushed
  * in the correct list of the dictionary. Otherwise a new element
  * is inserted in the dictionary with a single destination in its list.
+ * Hash table grows twice larger when the dictionary is 3/4 full.
  */
 
 #include <stdlib.h>
@@ -40,6 +41,7 @@ hash hash_f(state st, symbol ch){
 }
 
 rule_list *rule_list_find  (rule_list*, state, symbol);
+void       rule_list_push(rule_list **list, rule_list *new);
 
 /* Return:  0 on success
  *         -1 if malloc fails on new rule
@@ -75,6 +77,23 @@ rule_dest *rule_dict_find(rule_dict *dict, state st, symbol ch){
     return r ? r->dest : NULL;
 }
 
+int rule_dict_grow(rule_dict *dict){
+    rule_list **new_ht = calloc(dict->size * 2, sizeof(*new_ht));
+    if(!new_ht)
+        return -1;
+    size_t i;
+    rule_list *j, *k;
+    for(i = 0; i < dict->size; i++)
+        for(j = dict->rule[i]; j; j = k){
+            k = j->next;
+            rule_list_push(new_ht + j->hash % (dict->size * 2), j);
+        }
+    free(dict->rule);
+    dict->rule = new_ht;
+    dict->size *= 2;
+    return 0;
+}
+
 int rule_dict_insert(rule_dict *dict, struct rule *rule){
     hash h = hash_f(rule->st_from, rule->ch_from);
     /*
@@ -85,6 +104,8 @@ int rule_dict_insert(rule_dict *dict, struct rule *rule){
     if(t < 0)
         return -1;
     dict->count += t;
+    if(dict->count > dict->size * 3 / 4)
+        rule_dict_grow(dict);
     return 0;
 }
 
@@ -106,6 +127,11 @@ rule_list *rule_list_find(rule_list *rule, state st, symbol ch){
     return NULL;
 }
 
+void rule_list_push(rule_list **list, rule_list *new){
+        new->next = *list;
+        *list     = new;
+}
+
 int rule_list_insert(rule_list **list, hash h, struct rule *rule){
     int        incr = 0;
     rule_list *new  = rule_list_find(*list, rule->st_from, rule->ch_from);
@@ -117,8 +143,7 @@ int rule_list_insert(rule_list **list, hash h, struct rule *rule){
         new->st   = rule->st_from;
         new->ch   = rule->ch_from;
         new->dest = NULL;
-        new->next = *list;
-        *list     = new;
+        rule_list_push(list, new);
         incr      = 1;
     }
     if(rule_dest_push(&new->dest, rule->st_dest,
