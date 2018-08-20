@@ -6,7 +6,7 @@ NAME=ndtm
 BUILD_DIR=./build
 CONCAT_DIR=./concat
 CONCAT=concat
-CONCAT_DEP=$(DEP:%.d=%-$(CONCAT).d)
+CONCAT_DEP=concat.d
 CONCAT_FILE=$(CONCAT_DIR)/$(NAME)-$(CONCAT)
 
 SRC=$(wildcard *.c)
@@ -33,10 +33,6 @@ $(CONCAT): $(CONCAT_FILE)
 $(CONCAT_FILE): $(CONCAT_FILE).c
 	$(CC) $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/%-$(CONCAT).d: %.c
-	@mkdir -p $(@D)
-	@$(CC) -MM -MT '$(CONCAT_FILE).c' -MF $@ $<
-
 -include $(CONCAT_DEP)
 
 # Concatenate all the sources, headers first,
@@ -46,6 +42,6 @@ $(CONCAT_FILE).c: $(SRC)
 	cat $(filter %.h, $^) $(filter %.c, $^) | grep -v '#include "' > $@
 
 clean:
-	rm -f $(OBJ) $(DEP) $(CONCAT_DEP) $(CONCAT_FILE).c
+	rm -rf $(BUILD_DIR) $(NAME) $(CONCAT_DIR)
 
 .PHONY: clean $(CONCAT)

@@ -7,6 +7,7 @@
 #ifndef ACCEPT_H
 #define ACCEPT_H
 
+#include <stdlib.h>
 #include "types.h"
 
 typedef struct set set;

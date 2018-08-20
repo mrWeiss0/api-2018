@@ -111,7 +111,7 @@ void f_tr(char *s, struct tm *tm){
     int t = rule_dict_insert(tm->rules, &rule);
     assert(!t);
     set_max(tm->accept, rule.st_from);
-    set_max(tm->accept, rule.ch_dest);
+    set_max(tm->accept, rule.st_dest);
     rule_dest* w = rule_dict_find(tm->rules, rule.st_from, rule.ch_from);
     for(; w; w = w->next)
         if(w->ch == rule.ch_dest &&
