@@ -11,6 +11,8 @@
  * in the correct list of the dictionary. Otherwise a new element
  * is inserted in the dictionary with a single destination in its list.
  * Hash table grows twice larger when the dictionary is 3/4 full.
+ *
+ * (state, symbol) => [(state, move, symbol) -> (state, move, symbol) -> ]
  */
 
 #include <stdlib.h>
