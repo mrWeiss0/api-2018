@@ -17,6 +17,7 @@
 #include <assert.h>
 #include "rules.h"
 #include "accept.h"
+#include "tape.h"
 
 #define BUFSZ 512
 
@@ -139,5 +140,11 @@ void f_max(char *s, struct tm *tm){
 
 void f_run(char *s, struct tm *tm){
     (void)tm;
-    fputs(s, stdout);
+    tape *t = tape_init(s);
+    symbol x;
+    while((x = tape_read(t))){
+        tape_write(t, x, 1);
+        putchar(x);
+    }
+    delete_tape(t);
 }
