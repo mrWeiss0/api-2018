@@ -53,7 +53,7 @@ int        rule_list_insert(rule_list**, hash, struct rule*);
 void       delete_rule_list(rule_list*);
 
 /* Return 0 on success, else -1 */
-int        rule_dest_push  (rule_dest**, state, char, symbol);
+int        rule_dest_push  (rule_dest**, state, int, symbol);
 void       delete_rule_dest(rule_dest*);
 
 /******************** Dictionary ********************/
@@ -166,7 +166,7 @@ void delete_rule_list(rule_list *list){
 
 /******************** Destination ********************/
 
-int rule_dest_push(rule_dest **dest, state st, char mv, symbol ch){
+int rule_dest_push(rule_dest **dest, state st, int mv, symbol ch){
     rule_dest *new = malloc(sizeof(*new));
     if(!new)
         return -1;

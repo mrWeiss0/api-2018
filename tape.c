@@ -133,12 +133,12 @@ tape *tape_branch(tape *t){
     return tnew;
 }
 
-tape *tape_init(symbol *s){
+tape *tape_init(symbol *s, symbol blank, symbol term){
     tape *t          = tape_branch(NULL);
     struct tgroup *j = t->head;
-    if(*s && t) for(;;){
-        j->cell[t->idx] = *s;
-        if(!*++s) break;
+    if(*s && *s != term && t) for(;;){
+        j->cell[t->idx] = *s == blank ? '\0' : *s;
+        if(!*++s || *s == term) break;
         if(!(j->link[1] = calloc(1, sizeof(*j)))){
             delete_tape(t);
             return NULL;

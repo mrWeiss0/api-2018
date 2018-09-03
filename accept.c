@@ -30,7 +30,7 @@ typedef struct state_list{
 } state_list;
 
 /* Format dependent functions */
-typedef void* put_funct(void*, state);
+typedef void *put_funct(void*, state);
 typedef int   get_funct(void*, state);
 typedef void  del_funct(void*);
 put_funct list_put, * const f_put[] = {list_put, (put_funct*)bits_set};
@@ -41,8 +41,9 @@ char *list_to_bits(void**, size_t);
 
 /******************** Set ********************/
 
-set* new_set(){
-    set* s    = malloc(sizeof(*s));
+set *new_set(){
+    set *s    = malloc(sizeof(*s));
+    if(!s) return NULL;
     s->format = list;
     s->max    =
     s->count  = 0;
@@ -65,7 +66,7 @@ int set_put(set* s, state st){
     return !!t;
 }
 
-int set_get(set* s, state st){
+int set_get(set *s, state st){
     return f_get[s->format](s->data, st);
 }
 
@@ -74,7 +75,7 @@ void set_max(set *s, state max){
         s->max = max;
 }
 
-void delete_set(set* s){
+void delete_set(set *s){
     f_del[s->format](s->data);
     free(s);
 }
@@ -82,7 +83,8 @@ void delete_set(set* s){
 /******************** List ********************/
 
 void *list_put(void *list, state st){
-    state_list* t = malloc(sizeof(*t));
+    state_list* t = malloc(sizeof(*t)); 
+    if(!t) return NULL;
     t->st         = st;
     t->next       = list;
     return t;

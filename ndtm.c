@@ -3,11 +3,11 @@
  *
  * Author:    Giorgio Pristia
  *
- * The program takes input file from stdin,
- * parses it and prints it back to stdout.
- * Rules are stored in a dictionary that maps current state
- * and read symbol to a list of destinations to follow.
- * Accepting states are stored in a set.
+ * This program takes in input rules, accepting states and max moves
+ * for a turing machine, then a list of strings to test the tm for.
+ * It prints to stdout 1 for every string accepted by the tm,
+ *                     0 for not accepted strings,
+ *                     U if the tm does not terminate in an accepting state.
  * When a branch goes over max moves, it's considered not to terminate.
  */
 
@@ -15,21 +15,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "rules.h"
-#include "accept.h"
-#include "tape.h"
+#include "core.h"
 
-#define BUFSZ 512
-
-/* Machine settings */
-struct tm{
-    rule_dict* rules;
-    set *accept;
-    unsigned int max;
-};
-
-void tm_init   (struct tm*);
-void tm_destroy(struct tm*);
+#define BUFSZ 0x800
+#define BLANK '_'
+#define LEFT  'L'
+#define STAY  'S'
+#define RIGHT 'R'
 
 /* Functions to parse each section of the input */
 typedef void parse_funct(char*, struct tm*);
@@ -50,7 +42,8 @@ int main(){
             lbuf_sz =  0;
     int     st      = -1;    /* Current section state */
     struct tm tm;
-    tm_init(&tm);
+    int t = tm_init(&tm);
+    assert(!t);
     while(!feof(stdin)){
         /*
          * Read characters from input to buf and increase lbuf
@@ -62,7 +55,6 @@ int main(){
             /* Match the next section and continue */
             if(!strcmp(st_n[st + 1], buf)){
                 ++st;
-                fputs(st_n[st], stdout);
                 continue;
             }
             if(st < 0) continue;
@@ -89,62 +81,43 @@ int main(){
     return EXIT_SUCCESS;
 }
 
-/******************** TM init and delete ********************/
-
-void tm_init(struct tm *tm){
-    tm->rules = new_rule_dict();
-    assert(tm->rules);
-    tm->accept = new_set();
-    assert(tm->accept);
-}
-
-void tm_destroy(struct tm *tm){
-    delete_rule_dict(tm->rules);
-    delete_set(tm->accept);
-}
-
 /******************** Parser functions ********************/
 
 void f_tr(char *s, struct tm *tm){
     struct rule rule;
-    sscanf(s, "%u %c %c %c %u", &rule.st_from, &rule.ch_from,
-                                &rule.ch_dest, &rule.mv_dest, &rule.st_dest);
+    symbol ch_f, ch_d;
+    char mv;
+    sscanf(s, "%u %c %c %c %u", &rule.st_from, &ch_f, &ch_d, &mv,
+                                &rule.st_dest);
+    rule.ch_from = ch_f == BLANK ? '\0' : ch_f;
+    rule.ch_dest = ch_d == BLANK ? '\0' : ch_d;
+    switch(mv){
+        case LEFT:
+            rule.mv_dest = -1;
+            break;
+        case RIGHT:
+            rule.mv_dest =  1;
+            break;
+        case STAY:
+            rule.mv_dest =  0;
+    }
     int t = rule_dict_insert(tm->rules, &rule);
     assert(!t);
-    set_max(tm->accept, rule.st_from);
-    set_max(tm->accept, rule.st_dest);
-    rule_dest* w = rule_dict_find(tm->rules, rule.st_from, rule.ch_from);
-    for(; w; w = w->next)
-        if(w->ch == rule.ch_dest &&
-           w->mv == rule.mv_dest &&
-           w->st == rule.st_dest){
-            printf("%u %c %c %c %u\n", rule.st_from, rule.ch_from,
-                                       w->ch, w->mv, w->st);
-            break;
-        }
+    set_max(tm->accept, rule.st_from > rule.st_dest ? 
+                        rule.st_from : rule.st_dest );
 }
 
 void f_acc(char *s, struct tm *tm){
-    state st = atoi(s);
-    int t = set_put(tm->accept, st);
+    int t = set_put(tm->accept, atoi(s));
     assert(t);
-    if(set_get(tm->accept, st))
-        printf("%u\n", st);
 }
 
 void f_max(char *s, struct tm *tm){
-    unsigned int max = atoi(s);
-    tm->max = max;
-    printf("%u\n", tm->max);
+    tm->max = atoi(s);
 }
 
 void f_run(char *s, struct tm *tm){
     (void)tm;
-    tape *t = tape_init(s);
-    symbol x;
-    while((x = tape_read(t))){
-        tape_write(t, x, 1);
-        putchar(x);
-    }
+    tape *t = tape_init(s, BLANK, '\n');
     delete_tape(t);
 }
