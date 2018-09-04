@@ -12,7 +12,7 @@
 typedef struct tape tape;
 
 /*
- * Initialize a new tape containing the string passed 
+ * Initialize a new tape containing the string passed
  * blank are replaced with zeroes and term, if present,
  * marks the end of the string (to ignore trailing \n)
  */

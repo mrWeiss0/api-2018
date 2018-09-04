@@ -9,7 +9,7 @@
  * then a new group is created. When a group is empty, it is destroyed.
  * All tapes from a group link to the same metadata relative to
  * used and available indices in the group
- * 
+ *
  * t3:  _ .... a .... _
  * t2:  b .... _ .... _
  * t1:  a .... a .... _
@@ -124,7 +124,7 @@ tape *tape_branch(tape *t){
                     j->link[v] = k;
                 }
                 k->cell[tnew->idx] = i->cell[t->idx];
-                j = k;        
+                j = k;
                 k = j->link[v];
                 i = i->link[v];
             }

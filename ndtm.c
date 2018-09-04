@@ -22,6 +22,7 @@
 #define LEFT  'L'
 #define STAY  'S'
 #define RIGHT 'R'
+#define OUT   "01U"
 
 /* Functions to parse each section of the input */
 typedef void parse_funct(char*, struct tm*);
@@ -89,9 +90,9 @@ void f_tr(char *s, struct tm *tm){
     char mv;
     sscanf(s, "%u %c %c %c %u", &rule.st_from, &ch_f, &ch_d, &mv,
                                 &rule.st_dest);
-    rule.ch_from = ch_f == BLANK ? '\0' : ch_f;
-    rule.ch_dest = ch_d == BLANK ? '\0' : ch_d;
-    switch(mv){
+    rule.ch_from = ch_f == BLANK ? '\0' : ch_f; /* Blanks are replaced */
+    rule.ch_dest = ch_d == BLANK ? '\0' : ch_d; /* with zeroes,        */
+    switch(mv){                /* Moves with their corresponding value */
         case LEFT:
             rule.mv_dest = -1;
             break;
@@ -103,7 +104,7 @@ void f_tr(char *s, struct tm *tm){
     }
     int t = rule_dict_insert(tm->rules, &rule);
     assert(!t);
-    set_max(tm->accept, rule.st_from > rule.st_dest ? 
+    set_max(tm->accept, rule.st_from > rule.st_dest ?
                         rule.st_from : rule.st_dest );
 }
 
@@ -117,7 +118,13 @@ void f_max(char *s, struct tm *tm){
 }
 
 void f_run(char *s, struct tm *tm){
-    (void)tm;
     tape *t = tape_init(s, BLANK, '\n');
-    delete_tape(t);
+    assert(t);
+    struct tmconf *conf = calloc(1, sizeof(*conf));
+    assert(conf);
+    conf->ttl = tm->max;
+    conf->t   = t;
+    int v = tm_run(tm, conf);
+    assert(v >= 0);
+    printf("%c\n", v[OUT]);
 }

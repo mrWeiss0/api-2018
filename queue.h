@@ -11,16 +11,17 @@
 #include "tape.h"
 
 struct tmconf{
-    state st;
-    unsigned int count;
-    tape *t;
+    state          st;
+    unsigned int   ttl;
+    tape          *t;
     struct tmconf *next;
 };
 
-/* Create a queue with the initial configuration */
-struct queue  *new_queue   (tape *t);
-void           enqueue     (struct queue*, struct tmconf*);
-struct tmconf *dequeue     (struct queue*);
-void           delete_queue(struct queue*);
+typedef struct queue queue;
+
+queue         *new_queue   ();
+void           enqueue     (queue*, struct tmconf*);
+struct tmconf *dequeue     (queue*);
+void           delete_queue(queue*);
 
 #endif

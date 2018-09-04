@@ -83,7 +83,7 @@ void delete_set(set *s){
 /******************** List ********************/
 
 void *list_put(void *list, state st){
-    state_list* t = malloc(sizeof(*t)); 
+    state_list* t = malloc(sizeof(*t));
     if(!t) return NULL;
     t->st         = st;
     t->next       = list;
