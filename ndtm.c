@@ -7,6 +7,7 @@
  * parses it and prints it back to stdout.
  * Rules are stored in a dictionary that maps current state
  * and read symbol to a list of destinations to follow.
+ * Accepting states are stored in a set.
  */
 
 #include <stdlib.h>
@@ -14,12 +15,14 @@
 #include <string.h>
 #include <assert.h>
 #include "rules.h"
+#include "accept.h"
 
 #define BUFSZ 512
 
 /* Machine settings */
 struct tm{
     rule_dict* rules;
+    set *accept;
 };
 
 void tm_init   (struct tm*);
@@ -88,10 +91,13 @@ int main(){
 void tm_init(struct tm *tm){
     tm->rules = new_rule_dict();
     assert(tm->rules);
+    tm->accept = new_set();
+    assert(tm->accept);
 }
 
 void tm_destroy(struct tm *tm){
     delete_rule_dict(tm->rules);
+    delete_set(tm->accept);
 }
 
 /******************** Parser functions ********************/
@@ -102,6 +108,8 @@ void f_tr(char *s, struct tm *tm){
                                 &rule.ch_dest, &rule.mv_dest, &rule.st_dest);
     int t = rule_dict_insert(tm->rules, &rule);
     assert(!t);
+    set_max(tm->accept, rule.st_from);
+    set_max(tm->accept, rule.ch_dest);
     rule_dest* w = rule_dict_find(tm->rules, rule.st_from, rule.ch_from);
     for(; w; w = w->next)
         if(w->ch == rule.ch_dest &&
@@ -115,8 +123,10 @@ void f_tr(char *s, struct tm *tm){
 
 void f_acc(char *s, struct tm *tm){
     state st = atoi(s);
-    (void)tm;
-    printf("%u\n", st);
+    int t = set_put(tm->accept, st);
+    assert(t);
+    if(set_get(tm->accept, st))
+        printf("%u\n", st);
 }
 
 void f_max(char *s, struct tm *tm){
