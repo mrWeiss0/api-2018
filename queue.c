@@ -15,6 +15,11 @@ struct queue{
     struct tmconf *tail;
 };
 
+void delete_tmconf(struct tmconf *conf){
+        delete_tape(conf->t);
+        free(conf);
+};
+
 queue *new_queue(){
     return calloc(1, sizeof(queue));
 }
@@ -27,8 +32,10 @@ void enqueue(queue *q, struct tmconf *conf){
 
 struct tmconf *dequeue(queue *q){
     struct tmconf *conf;
-    if((conf = q->tail))
+    if((conf = q->tail)){
         q->tail = conf->next;
+        conf->next = NULL;
+    }
     if(!q->tail)
         q->head = NULL;
     return conf;
@@ -36,9 +43,7 @@ struct tmconf *dequeue(queue *q){
 
 void delete_queue(queue *q){
     struct tmconf *conf;
-    while((conf = dequeue(q))){
-        delete_tape(conf->t);
-        free(conf);
-    }
+    while((conf = dequeue(q)))
+        delete_tmconf(conf);
     free(q);
 }

@@ -19,6 +19,8 @@ struct tmconf{
 
 typedef struct queue queue;
 
+void delete_tmconf(struct tmconf*);
+
 queue         *new_queue   ();
 void           enqueue     (queue*, struct tmconf*);
 struct tmconf *dequeue     (queue*);
