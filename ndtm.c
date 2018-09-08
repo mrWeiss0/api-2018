@@ -118,7 +118,7 @@ void f_max(char *s, struct tm *tm){
 }
 
 void f_run(char *s, struct tm *tm){
-    tape *t = tape_init(s, BLANK, '\n');
+    tape *t = tape_init(s, BLANK, "\n");
     assert(t);
     struct tmconf *conf = calloc(1, sizeof(*conf));
     assert(conf);

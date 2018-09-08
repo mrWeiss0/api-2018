@@ -19,155 +19,65 @@
  */
 
 #include <stdlib.h>
-#include "bits.h"
+#include <string.h>
 #include "tape.h"
 
-#define TAPEGR_SZ 256
-
-struct tgroup{
-    symbol cell[TAPEGR_SZ];
-    struct tgroup *link[2]; /* 0: prev, 1: next */
-};
-
-struct tmeta{
-    char   active[BYTES(TAPEGR_SZ)];
-    size_t count;
-    size_t next_avail;
-};
-
 struct tape{
-    struct tmeta  *meta;
-    struct tgroup *head;
-    size_t         idx;
+    symbol *tail[2];
+    size_t  size[2];
+    long    head;
 };
-
-/*
- * Set (unset) used tapes in a group
- * In(de)crease group count
- * Update next available index
- */
-void tmeta_set(struct tmeta* meta, size_t i){
-    bits_set(meta->active, i);
-    ++meta->count;
-    meta->next_avail = bits_next_avail(meta->active, TAPEGR_SZ, i + 1);
-}
-
-void tmeta_unset(struct tmeta* meta, size_t i){
-    bits_unset(meta->active, i);
-    --meta->count;
-    if(i < meta->next_avail)
-        meta->next_avail = i;
-}
-
-/*
- * If t is NULL or its group is full create a new empty tape in a new group
- * otherwise place a new tape in the first available index of the group
- * with head pointing to the same head of t
- */
-tape* new_tape(tape *t){
-    tape *tnew = malloc(sizeof(*tnew));
-    if(!tnew) return NULL;
-    if(!(t && t->meta->count < TAPEGR_SZ)){
-        if(!( (tnew->head = calloc(1, sizeof(*tnew->head))) &&
-              (tnew->meta = calloc(1, sizeof(*tnew->meta))) ))
-            return NULL;
-        tnew->idx  = 0;
-    }
-    else{
-        tnew->head = t->head;
-        tnew->meta = t->meta;
-        tnew->idx  = t->meta->next_avail;
-    }
-    tmeta_set(tnew->meta,tnew->idx);
-    return tnew;
-}
 
 symbol tape_read(tape *t){
-    return t->head->cell[t->idx];
+    if(t->head < 0) return t->tail[0][~t->head];
+    return t->tail[1][t->head];
 }
 
 tape *tape_write(tape *t, symbol write, int move){
-    int dir;
-    t->head->cell[t->idx] = write;
-    while(move){                 /* move tape head of specified cells */
-        dir = move > 0;
-        move -= (dir * 2 - 1);   /* Decrease move absolute value      */
-        if(!t->head->link[dir]){ /* Create new cells if necessary     */
-            if(!(t->head->link[dir] = calloc(1, sizeof(*t->head))))
-                return NULL;
-            t->head->link[dir]->link[!dir] = t->head;
-        }
-        t->head = t->head->link[dir];
+    if(t->head < 0) t->tail[0][~t->head] = write;
+    else t->tail[1][t->head] = write;
+    t->head += move;
+    if(t->head >= (signed)t->size[1]){
+        t->tail[1] = realloc(t->tail[1], (t->head + 1) * sizeof(**t->tail));
+        memset(t->tail[1] + t->size[1], 0, move);
+        t->size[1] = t->head + 1;
+    }
+    if(t->head < -(signed)t->size[0]){
+        t->tail[0] = realloc(t->tail[0], -t->head * sizeof(**t->tail));
+        memset(t->tail[0] + t->size[0], 0, -move);
+        t->size[0] = -t->head;
     }
     return t;
 }
 
 tape *tape_branch(tape *t){
-    tape *tnew = new_tape(t);
-    if(t && tnew){
-        struct tgroup *i, *j, *k;
-        for(int v = 0; v <= 1; v++){ /* Copy tape in two directions */
-            i = t->head;
-            j = k = tnew->head;
-            if(!v){                  /* Skip head in first pass     */
-                k = k->link[v];
-                i = i->link[v];
-            }
-            while(i){
-                if(!k){
-                    /* Create new cells if the new tape is in a new group */
-                    if(!(k = calloc(1, sizeof(*k)))){
-                        delete_tape(t);
-                        return NULL;
-                    }
-                    k->link[!v] = j;
-                    j->link[v] = k;
-                }
-                k->cell[tnew->idx] = i->cell[t->idx];
-                j = k;
-                k = j->link[v];
-                i = i->link[v];
-            }
+    tape *tnew = calloc(1, sizeof(*tnew));
+    if(t && tnew) for(int i = 0; i <= 1; i++){
+        if(!(tnew->tail[i] = malloc(t->size[i] * sizeof(**tnew->tail)))){
+            free(*tnew->tail);
+            free(tnew);
+            return NULL;
         }
+        memcpy(tnew->tail[i], t->tail[i], t->size[i]);
+        tnew->size[i] = t->size[i];
+        tnew->head = t->head;
     }
     return tnew;
 }
 
-tape *tape_init(symbol *s, symbol blank, symbol term){
-    tape *t          = tape_branch(NULL);
-    struct tgroup *j = t->head;
-    if(*s && *s != term && t) for(;;){
-        j->cell[t->idx] = *s == blank ? '\0' : *s;
-        if(!*++s || *s == term) break;
-        if(!(j->link[1] = calloc(1, sizeof(*j)))){
-            delete_tape(t);
-            return NULL;
-        }
-        j->link[1]->link[0] = j;
-        j = j->link[1];
-    }
+tape *tape_init(symbol *s, symbol blank, symbol *term){
+    tape *t  = tape_branch(NULL);
+    if(!t) return NULL; 
+    t->size[1] = strcspn(s, term);
+    t->tail[1] = calloc(t->size[1], sizeof(**t->tail));
+    for(size_t l = 0; s[l] && s[l] != *term; l++)
+        if(s[l] != blank)
+            t->tail[1][l] = s[l];
     return t;
 }
 
-void delete_tgroup(struct tgroup *tg){
-    struct tgroup *i, *j;
-    for(int v = 0; v <= 1; v++){ /* Delete in two directions from head */
-        i = tg;
-        if(!v)                   /* Skip head in first pass            */
-            i = i->link[v];
-        while(i){
-            j = i->link[v];
-            free(i);
-            i = j;
-        }
-    }
-}
-
 void delete_tape(tape *t){
-    tmeta_unset(t->meta, t->idx);
-    if(!t->meta->count){ /* Delete group when its last tape is deleted */
-        delete_tgroup(t->head);
-        free(t->meta);
-    }
+    for(int i = 0; i <= 1; i++)
+        free(t->tail[i]);
     free(t);
 }
