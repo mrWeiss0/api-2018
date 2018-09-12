@@ -20,28 +20,6 @@
 
 #define DICT_MINSZ 8
 
-typedef unsigned int     hash;
-typedef struct rule_list rule_list;
-
-struct rule_dict{
-    rule_list **rule;
-    size_t      size,
-                count;
-};
-
-struct rule_list{
-    hash        hash;
-    state       st;
-    symbol      ch;
-    rule_dest  *dest;
-    rule_list  *next;
-};
-
-
-hash hash_f(state st, symbol ch){
-    return st + ch;
-}
-
 rule_list *rule_list_find  (rule_list*, state, symbol);
 void       rule_list_push(rule_list **list, rule_list *new);
 
@@ -70,13 +48,6 @@ rule_dict *new_rule_dict(){
     dict->size  = DICT_MINSZ;
     dict->count = 0;
     return dict;
-}
-
-rule_dest *rule_dict_find(rule_dict *dict, state st, symbol ch){
-    hash h = hash_f(st, ch);
-    rule_list *r =
-        rule_list_find(dict->rule[h % dict->size], st, ch);
-    return r ? r->dest : NULL;
 }
 
 int rule_dict_grow(rule_dict *dict){
@@ -120,14 +91,6 @@ void delete_rule_dict(rule_dict *dict){
 }
 
 /******************** List ********************/
-
-rule_list *rule_list_find(rule_list *rule, state st, symbol ch){
-    for(; rule; rule = rule->next)
-        if(rule->st == st &&
-           rule->ch == ch)
-            return rule;
-    return NULL;
-}
 
 void rule_list_push(rule_list **list, rule_list *new){
         new->next = *list;

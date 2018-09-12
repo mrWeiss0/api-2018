@@ -19,36 +19,7 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 #include "tape.h"
-
-struct tape{
-    symbol *tail[2];
-    size_t  size[2];
-    long    head;
-};
-
-symbol tape_read(tape *t){
-    if(t->head < 0) return t->tail[0][~t->head];
-    return t->tail[1][t->head];
-}
-
-tape *tape_write(tape *t, symbol write, int move){
-    if(t->head < 0) t->tail[0][~t->head] = write;
-    else t->tail[1][t->head] = write;
-    t->head += move;
-    if(t->head >= (signed)t->size[1]){
-        t->tail[1] = realloc(t->tail[1], (t->head + 1) * sizeof(**t->tail));
-        memset(t->tail[1] + t->size[1], 0, move);
-        t->size[1] = t->head + 1;
-    }
-    if(t->head < -(signed)t->size[0]){
-        t->tail[0] = realloc(t->tail[0], -t->head * sizeof(**t->tail));
-        memset(t->tail[0] + t->size[0], 0, -move);
-        t->size[0] = -t->head;
-    }
-    return t;
-}
 
 tape *tape_branch(tape *t){
     tape *tnew = calloc(1, sizeof(*tnew));
