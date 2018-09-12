@@ -17,8 +17,8 @@ struct rule{
     int    mv_dest;
 };
 
-typedef struct rule_dict rule_dict;
 typedef struct rule_dest rule_dest;
+typedef struct rule_dict rule_dict;
 
 /* List of non deterministic destinations for each rule */
 struct rule_dest{
@@ -28,9 +28,13 @@ struct rule_dest{
     rule_dest  *next;
 };
 
+struct rule_dict{
+    rule_dest *(*rule)[0x100];
+    state      size;
+};
+
 /* Return the dictionary or NULL if malloc fails */
 rule_dict *new_rule_dict   ();
-rule_dest *rule_dict_find  (rule_dict*, state, symbol);
 
 /* Return 0 on success, else -1 */
 int        rule_dict_insert(rule_dict*, struct rule*);

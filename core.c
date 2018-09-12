@@ -20,7 +20,7 @@ int tm_run(struct tm *tm, struct tmconf *c){
     /* Loop until reache accept state or queue is empty */
     while(!(o & 1) && (c = dequeue(q))){
         /* Outgoing transitions from the current configuration */
-        d = rule_dict_find(tm->rules, c->st, tape_read(c->t));
+        d = tm->rules->rule[c->st][tape_read(c->t)];
         if(!d)                 /* No outgoing transitions: dead branch    */
             delete_tmconf(c);
         else if(!c->ttl){      /* There are outgoing transitions but time */
